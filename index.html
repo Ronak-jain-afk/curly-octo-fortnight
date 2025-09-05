@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinco Quiz - Multiplayer Quiz Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6e8efb, #a777e3);
+            --secondary-gradient: linear-gradient(135deg, #3494e6, #ec6ead);
+            --success-gradient: linear-gradient(135deg, #00b09b, #96c93d);
+            --warning-gradient: linear-gradient(135deg, #ff5e62, #ff9966);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            --text-light: rgba(255, 255, 255, 0.9);
+            --text-lighter: rgba(255, 255, 255, 0.7);
+            
+            /* Sky-themed selection colors */
+            --selection-gradient: linear-gradient(135deg, #87CEEB, #E0F7FF);
+            --selection-border: rgba(135, 206, 235, 0.6);
+            --selection-shadow: 0 8px 32px 0 rgba(31, 138, 235, 0.37);
+            --selection-text: #1E40AF;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--primary-gradient);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Liquid background animation */
+        .liquid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .liquid-bg::before,
+        .liquid-bg::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 45% 55% 70% 30% / 30% 40% 70% 70%;
+            background: rgba(255, 255, 255, 0.2);
+            animation: liquidMove 15s linear infinite;
+        }
+
+        .liquid-bg::before {
+            top: 10%;
+            left: 20%;
+        }
+
+        .liquid-bg::after {
+            bottom: 10%;
+            right: 20%;
+            animation-delay: -7s;
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        }
+
+        @keyframes liquidMove {
+            0% {
+                transform: translate(0, 0) rotate(0);
+            }
+            33% {
+                transform: translate(30px, -50px) rotate(120deg);
+            }
+            66% {
+                transform: translate(-20px, 40px) rotate(240deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(360deg);
+            }
+        }
+
+        /* Glassmorphism base styles */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            box-shadow: var(--glass-shadow);
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .glass-button {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: var(--text-light);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px 0 rgba(31, 38, 135, 0.5);
+        }
+
+        /* Layout components */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 0;
+        }
+
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        /* Home screen */
+        .home-screen {
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .home-title {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            font-weight: 800;
+            background: linear-gradient(to right, #fff, #d9e3f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .home-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            color: var(--text-lighter);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .glass-button {
+            min-width: 180px;
+            padding: 16px 28px;
+            font-size: 1.1rem;
+        }
+
+        /* Join quiz screen */
+        .join-screen {
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .glass-input {
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Quiz setup screen */
+        .quiz-setup {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .setup-title {
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .option-card {
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .option-card.selected {
+            background: var(--selection-gradient);
+            border: 1px solid var(--selection-border);
+            box-shadow: var(--selection-shadow);
+            color: var(--selection-text);
+        }
+
+        .option-card.selected::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, #3494e6, #87CEEB);
+        }
+
+        .option-card.selected .option-icon,
+        .option-card.selected .option-title,
+        .option-card.selected p {
+            color: var(--selection-text);
+        }
+
+        .option-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        .option-title {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        .option-card p {
+            color: var(--text-lighter);
+            transition: color 0.3s ease;
+        }
+
+        /* Game mode selection */
+        .mode-selection {
+            margin-bottom: 30px;
+        }
+
+        .mode-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .mode-options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .mode-option {
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            min-width: 180px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-option:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .mode-option.selected {
+            background: var(--selection-gradient);
+            border: 1px solid var(--selection-border);
+            box-shadow: var(--selection-shadow);
+            color: var(--selection-text);
+        }
+
+        .mode-option.selected::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, #3494e6, #87CEEB);
+        }
+
+        .mode-option.selected .mode-icon,
+        .mode-option.selected .option-title,
+        .mode-option.selected p {
+            color: var(--selection-text);
+        }
+
+        .mode-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        /* Lobby screen */
+        .lobby-screen {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 25px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .player-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .btn-approve {
+            background: rgba(0, 180, 155, 0.2);
+            border: 1px solid rgba(0, 180, 155, 0.4);
+        }
+
+        .btn-reject {
+            background: rgba(255, 94, 98, 0.2);
+            border: 1px solid rgba(255, 94, 98, 0.4);
+        }
+
+        /* Team assignment in lobby */
+        .team-assignment {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .team-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .team-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .team-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .team-red {
+            background: rgba(255, 0, 0, 0.15);
+            border-left: 4px solid rgba(255, 0, 0, 0.6);
+        }
+
+        .team-blue {
+            background: rgba(0, 0, 255, 0.15);
+            border-left: 4px solid rgba(0, 0, 255, 0.6);
+        }
+
+        .team-green {
+            background: rgba(0, 255, 0, 0.15);
+            border-left: 4px solid rgba(0, 255, 0, 0.6);
+        }
+
+        .team-yellow {
+            background: rgba(255, 255, 0, 0.15);
+            border-left: 4px solid rgba(255, 255, 0, 0.6);
+        }
+
+        .team-selector {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .team-btn {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* Quiz screen */
+        .quiz-container {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            gap: 20px;
+        }
+
+        .quiz-content {
+            flex: 1;
+            min-width: 0; /* Prevents flex item from overflowing */
+        }
+
+        .quiz-screen {
+            width: 100%;
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .question-count {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: 50px;
+            background: var(--warning-gradient);
+        }
+
+        .question-card {
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .option-btn {
+            text-align: left;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            justify-content: flex-start;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .option-btn.selected {
+            background: rgba(52, 148, 230, 0.3);
+            border: 1px solid rgba(52, 148, 230, 0.6);
+        }
+
+        .leaderboard-panel {
+            width: 250px;
+            flex-shrink: 0;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 10px;
+            transition: all 0.5s ease;
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-item.current-user {
+            background: rgba(52, 148, 230, 0.3);
+            border: 1px solid rgba(52, 148, 230, 0.5);
+        }
+
+        /* Team leaderboard styles */
+        .team-leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .team-score {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* Results screen */
+        .results-screen {
+            width: 100%;
+            text-align: center;
+        }
+
+        .results-title {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+
+        .podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 20px;
+            margin: 40px 0;
+            height: 300px;
+        }
+
+        .podium-item {
+            width: 150px;
+            text-align: center;
+            border-radius: 12px 12px 0 0;
+            padding: 20px 15px;
+            position: relative;
+        }
+
+        .podium-item.first {
+            height: 220px;
+            background: linear-gradient(to bottom, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .podium-item.second {
+            height: 180px;
+            background: linear-gradient(to bottom, rgba(192, 192, 192, 0.3), rgba(192, 192, 192, 0.1));
+            box-shadow: 0 0 20px rgba(192, 192, 192, 0.5);
+        }
+
+        .podium-item.third {
+            height: 150px;
+            background: linear-gradient(to bottom, rgba(205, 127, 50, 0.3), rgba(205, 127, 50, 0.1));
+            box-shadow: 0 0 20px rgba(205, 127, 50, 0.5);
+        }
+
+        .podium-rank {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            font-weight: 800;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .podium-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .podium-score {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .final-leaderboard {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Team results styles */
+        .team-results {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        .team-result-card {
+            width: 200px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .team-result-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .team-result-score {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* Connection status */
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .status-connected {
+            background: rgba(0, 180, 155, 0.3);
+            border: 1px solid rgba(0, 180, 155, 0.5);
+        }
+
+        .status-disconnected {
+            background: rgba(255, 94, 98, 0.3);
+            border: 1px solid rgba(255, 94, 98, 0.5);
+        }
+
+        .status-connecting {
+            background: rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mt-30 {
+            margin-top: 30px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 900px) {
+            .quiz-container {
+                flex-direction: column;
+            }
+            
+            .leaderboard-panel {
+                width: 100%;
+                max-height: 200px;
+                order: -1;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .home-title {
+                font-size: 2.5rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .mode-options {
+                flex-direction: column;
+            }
+            
+            .podium {
+                height: auto;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .podium-item {
+                width: 80%;
+                height: auto !important;
+                padding: 15px;
+                border-radius: 12px;
+                margin-bottom: 40px;
+            }
+            
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .team-results {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="liquid-bg"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">Cinco Quiz</div>
+            <div class="user-menu">
+                <div class="glass-button" id="user-indicator">
+                    <i class="fas fa-user"></i> <span id="user-role">Host</span>
+                </div>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <!-- Home Screen -->
+            <section id="home-screen" class="home-screen glass-card">
+                <h1 class="home-title">Cinco Quiz</h1>
+                <p class="home-subtitle">Test your knowledge with our immersive quiz experience</p>
+                
+                <div class="action-buttons">
+                    <button id="create-quiz-btn" class="glass-button">
+                        <i class="fas fa-plus"></i> Create New Quiz
+                    </button>
+                    <button id="join-quiz-btn" class="glass-button">
+                        <i class="fas fa-sign-in-alt"></i> Join Quiz
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Join Quiz Screen -->
+            <section id="join-screen" class="join-screen glass-card hidden">
+                <h2 class="setup-title">Join a Quiz</h2>
+                
+                <div class="input-group">
+                    <label class="input-label" for="player-name">Your Name</label>
+                    <input type="text" id="player-name" class="glass-input" placeholder="Enter your name">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="room-code-input">Room Code</label>
+                    <input type="text" id="room-code-input" class="glass-input" placeholder="Enter room code">
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="join-room-btn" class="glass-button">
+                        <i class="fas fa-sign-in-alt"></i> Join Room
+                    </button>
+                    <button id="back-to-home-btn" class="glass-button">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Quiz Setup Screen -->
+            <section id="quiz-setup-screen" class="quiz-setup glass-card hidden">
+                <h2 class="setup-title">Create a New Quiz</h2>
+                
+                <!-- Game Mode Selection -->
+                <div class="mode-selection">
+                    <h3 class="mode-title">Select Game Mode</h3>
+                    <div class="mode-options">
+                        <div class="mode-option glass-card" data-mode="individual">
+                            <div class="mode-icon"><i class="fas fa-user"></i></div>
+                            <h3 class="option-title">Individual</h3>
+                            <p>Play on your own</p>
+                        </div>
+                        <div class="mode-option glass-card" data-mode="team">
+                            <div class="mode-icon"><i class="fas fa-users"></i></div>
+                            <h3 class="option-title">Team Mode</h3>
+                            <p>Play in teams</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="text-center mt-20">Select Topic</h3>
+                <div class="option-grid" id="topic-grid">
+                    <div class="option-card glass-card" data-topic="c-basics">
+                        <div class="option-icon"><i class="fab fa-c"></i></div>
+                        <h3 class="option-title">C Basics</h3>
+                        <p>Fundamentals of C programming</p>
+                    </div>
+                    <div class="option-card glass-card" data-topic="java-basics">
+                        <div class="option-icon"><i class="fab fa-java"></i></div>
+                        <h3 class="option-title">Java Basics</h3>
+                        <p>Core Java concepts</p>
+                    </div>
+                    <div class="option-card glass-card" data-topic="python-basics">
+                        <div class="option-icon"><i class="fab fa-python"></i></div>
+                        <h3 class="option-title">Python Basics</h3>
+                        <p>Python programming fundamentals</p>
+                    </div>
+                    <div class="option-card glass-card" data-topic="networks">
+                        <div class="option-icon"><i class="fas fa-network-wired"></i></div>
+                        <h3 class="option-title">Computer Networks</h3>
+                        <p>Networking basics and protocols</p>
+                    </div>
+                </div>
+                
+                <h3 class="text-center mt-30">Number of Questions</h3>
+                <div class="option-grid" id="question-count-grid">
+                    <div class="option-card glass-card" data-count="5">
+                        <div class="option-icon"><i class="fas fa-list-ol"></i></div>
+                        <h3 class="option-title">5 Questions</h3>
+                        <p>Quick quiz</p>
+                    </div>
+                    <div class="option-card glass-card" data-count="10">
+                        <div class="option-icon"><i class="fas fa-list-ol"></i></div>
+                        <h3 class="option-title">10 Questions</h3>
+                        <p>Standard challenge</p>
+                    </div>
+                    <div class="option-card glass-card" data-count="15">
+                        <div class="option-icon"><i class="fas fa-list-alt"></i></div>
+                        <h3 class="option-title">15 Questions</h3>
+                        <p>Extended challenge</p>
+                    </div>
+                    <div class="option-card glass-card" data-count="20">
+                        <div class="option-icon"><i class="fas fa-list-alt"></i></div>
+                        <h3 class="option-title">20 Questions</h3>
+                        <p>Comprehensive challenge</p>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-30">
+                    <button id="create-room-btn" class="glass-button" disabled>
+                        <i class="fas fa-door-open"></i> Create Room
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Lobby Screen -->
+            <section id="lobby-screen" class="lobby-screen glass-card hidden">
+                <h2 class="setup-title">Quiz Lobby</h2>
+                <p class="text-center">Room Code: <strong id="room-code">ABCD</strong></p>
+                <p class="text-center">Mode: <strong id="game-mode-indicator">Individual</strong></p>
+                
+                <h3 class="mt-20">Players in Lobby</h3>
+                <div class="player-list" id="players-container">
+                    <!-- Players will be added here dynamically -->
+                </div>
+                
+                <!-- Team Assignment Section (only visible in team mode) -->
+                <div id="team-assignment-section" class="team-assignment glass-card hidden">
+                    <h3 class="team-title">Team Assignment</h3>
+                    <div class="team-list" id="team-list">
+                        <!-- Team assignments will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <div class="text-center mt-20">
+                    <button id="start-quiz-btn" class="glass-button">
+                        <i class="fas fa-play"></i> Start Quiz
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="hidden">
+                <div class="quiz-container">
+                    <div class="quiz-content">
+                        <div class="quiz-screen glass-card">
+                            <div class="quiz-header">
+                                <div class="question-count">Question <span id="current-question">1</span> of <span id="total-questions">10</span></div>
+                                <div class="timer" id="timer">00:30</div>
+                            </div>
+                            
+                            <div class="question-card glass-card">
+                                <h3 class="question-text" id="question-text">
+                                    Which of the following is the correct way to declare a pointer to an integer in C?
+                                </h3>
+                                
+                                <div class="options-grid" id="options-grid">
+                                    <button class="option-btn glass-button">int ptr;</button>
+                                    <button class="option-btn glass-button">int *ptr;</button>
+                                    <button class="option-btn glass-button">pointer int ptr;</button>
+                                    <button class="option-btn glass-button">&int ptr;</button>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button id="next-question-btn" class="glass-button">
+                                    <i class="fas fa-arrow-right"></i> Next Question
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="leaderboard-panel" class="leaderboard-panel glass-card">
+                        <h3 class="leaderboard-title" id="leaderboard-title">Leaderboard</h3>
+                        <div class="leaderboard-list" id="leaderboard-list">
+                            <!-- Leaderboard items will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Screen -->
+            <section id="results-screen" class="results-screen glass-card hidden">
+                <h2 class="results-title">Quiz Results</h2>
+                
+                <!-- Individual Results -->
+                <div id="individual-results">
+                    <div class="podium">
+                        <div class="podium-item first">
+                            <div class="podium-rank">1</div>
+                            <div class="podium-name">Player 3</div>
+                            <div class="podium-score">950</div>
+                        </div>
+                        <div class="podium-item second">
+                            <div class="podium-rank">2</div>
+                            <div class="podium-name">Player 1</div>
+                            <div class="podium-score">870</div>
+                        </div>
+                        <div class="podium-item third">
+                            <div class="podium-rank">3</div>
+                            <div class="podium-name">Player 2</div>
+                            <div class="podium-score">780</div>
+                        </div>
+                    </div>
+                    
+                    <h3 class="mt-20">Final Leaderboard</h3>
+                    <div class="final-leaderboard" id="final-leaderboard">
+                        <!-- Final leaderboard items will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Team Results -->
+                <div id="team-results" class="hidden">
+                    <h3 class="mt-20">Team Results</h3>
+                    <div class="team-results" id="team-results-container">
+                        <!-- Team results will be added here dynamically -->
+                    </div>
+                    
+                    <h3 class="mt-30">Team Members</h3>
+                    <div class="final-leaderboard" id="team-members-container">
+                        <!-- Team members will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <div class="text-center mt-30">
+                    <button id="back-to-home-final-btn" class="glass-button">
+                        <i class="fas fa-home"></i> Back to Home
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status status-disconnected hidden">
+        <i class="fas fa-plug"></i>
+        <span>Disconnected</span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const homeScreen = document.getElementById('home-screen');
+        const joinScreen = document.getElementById('join-screen');
+        const quizSetupScreen = document.getElementById('quiz-setup-screen');
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const timerElement = document.getElementById('timer');
+        const teamAssignmentSection = document.getElementById('team-assignment-section');
+        const individualResults = document.getElementById('individual-results');
+        const teamResults = document.getElementById('team-results');
+        const leaderboardTitle = document.getElementById('leaderboard-title');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const gameModeIndicator = document.getElementById('game-mode-indicator');
+        const playersContainer = document.getElementById('players-container');
+        const connectionStatus = document.getElementById('connection-status');
+        const userRoleElement = document.getElementById('user-role');
+        
+        const createQuizBtn = document.getElementById('create-quiz-btn');
+        const joinQuizBtn = document.getElementById('join-quiz-btn');
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        const backToHomeBtn = document.getElementById('back-to-home-btn');
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const startQuizBtn = document.getElementById('start-quiz-btn');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const backToHomeFinalBtn = document.getElementById('back-to-home-final-btn');
+        
+        const topicGrid = document.getElementById('topic-grid');
+        const questionCountGrid = document.getElementById('question-count-grid');
+        const modeOptions = document.querySelectorAll('.mode-option');
+        
+        // Game state
+        let gameState = {
+            isHost: true,
+            gameMode: 'individual',
+            topic: null,
+            questionCount: null,
+            roomCode: null,
+            players: [],
+            teams: [],
+            currentQuestion: 1,
+            timer: null,
+            timeRemaining: 30,
+            score: 0
+        };
+        
+        // Dummy players for simulation
+        const dummyPlayers = [
+            { id: 1, name: 'Alice', score: 0, team: null },
+            { id: 2, name: 'Bob', score: 0, team: null },
+            { id: 3, name: 'Charlie', score: 0, team: null },
+            { id: 4, name: 'Diana', score: 0, team: null }
+        ];
+        
+        // Sample questions for each topic
+        const questions = {
+            'c-basics': [
+                {
+                    question: 'Which of the following is the correct way to declare a pointer to an integer in C?',
+                    options: ['int ptr;', 'int *ptr;', 'pointer int ptr;', '&int ptr;'],
+                    correctIndex: 1
+                },
+                {
+                    question: 'What is the output of printf("%d", 10++);?',
+                    options: ['10', '11', 'Compilation Error', 'Runtime Error'],
+                    correctIndex: 2
+                },
+                {
+                    question: 'Which function is used to allocate memory dynamically in C?',
+                    options: ['malloc()', 'alloc()', 'new', 'create()'],
+                    correctIndex: 0
+                },
+                {
+                    question: 'What does the "const" keyword indicate in C?',
+                    options: ['Variable is constant', 'Variable is volatile', 'Function returns constant', 'Pointer is constant'],
+                    correctIndex: 0
+                },
+                {
+                    question: 'Which header file is required for using the printf() function?',
+                    options: ['<stdio.h>', '<stdlib.h>', '<conio.h>', '<math.h>'],
+                    correctIndex: 0
+                }
+            ],
+            'java-basics': [
+                {
+                    question: 'Which of the following is not a primitive data type in Java?',
+                    options: ['int', 'boolean', 'String', 'double'],
+                    correctIndex: 2
+                },
+                {
+                    question: 'What is the default value of a boolean variable in Java?',
+                    options: ['true', 'false', 'null', '0'],
+                    correctIndex: 1
+                },
+                {
+                    question: 'Which keyword is used to inherit a class in Java?',
+                    options: ['extends', 'implements', 'inherits', 'super'],
+                    correctIndex: 0
+                },
+                {
+                    question: 'Which method is the entry point for a Java application?',
+                    options: ['main()', 'start()', 'init()', 'run()'],
+                    correctIndex: 0
+                },
+                {
+                    question: 'Which collection class allows you to associate keys with values?',
+                    options: ['ArrayList', 'HashMap', 'HashSet', 'LinkedList'],
+                    correctIndex: 1
+                }
+            ],
+            'python-basics': [
+                {
+                    question: 'Which of the following is used to define a block of code in Python?',
+                    options: ['Curly braces {}', 'Parentheses ()', 'Indentation', 'Square brackets []'],
+                    correctIndex: 2
+                },
+                {
+                    question: 'What is the output of print(3 * "hello")?',
+                    options: ['hellohellohello', '3hello', 'TypeError', 'hello hello hello'],
+                    correctIndex: 0
+                },
+                {
+                    question: 'Which keyword is used to define a function in Python?',
+                    options: ['function', 'def', 'define', 'func'],
+                    correctIndex: 1
+                },
+                {
+                    question: 'Which data type is mutable in Python?',
+                    options: ['tuple', 'string', 'list', 'int'],
+                    correctIndex: 2
+                },
+                {
+                    question: 'Which of the following is used to install Python packages?',
+                    options: ['pip', 'npm', 'install', 'package'],
+                    correctIndex: 0
+                }
+            ],
+            'networks': [
+                {
+                    question: 'What does TCP stand for?',
+                    options: ['Transmission Control Protocol', 'Transfer Connection Protocol', 'Transmission Connection Protocol', 'Transfer Control Protocol'],
+                    correctIndex: 0
+                },
+                {
+                    question: 'Which protocol is used to retrieve emails from a mail server?',
+                    options: ['SMTP', 'FTP', 'POP3', 'HTTP'],
+                    correctIndex: 2
+                },
+                {
+                    question: 'What is the default port number for HTTP?',
+                    options: ['80', '443', '21', '25'],
+                    correctIndex: 0
+                },
+                {
+                    question: 'Which layer of the OSI model is responsible for routing?',
+                    options: ['Physical', 'Data Link', 'Network', 'Transport'],
+                    correctIndex: 2
+                },
+                {
+                    question: 'What does DNS stand for?',
+                    options: ['Domain Name System', 'Dynamic Name Server', 'Domain Network System', 'Dynamic Network Service'],
+                    correctIndex: 0
+                }
+            ]
+        };
+        
+        // Event Listeners
+        createQuizBtn.addEventListener('click', showQuizSetupScreen);
+        joinQuizBtn.addEventListener('click', showJoinScreen);
+        joinRoomBtn.addEventListener('click', joinRoom);
+        backToHomeBtn.addEventListener('click', showHomeScreen);
+        createRoomBtn.addEventListener('click', createRoom);
+        startQuizBtn.addEventListener('click', startQuiz);
+        nextQuestionBtn.addEventListener('click', nextQuestion);
+        backToHomeFinalBtn.addEventListener('click', showHomeScreen);
+        
+        // Setup option selection
+        topicGrid.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', () => {
+                topicGrid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                gameState.topic = card.dataset.topic;
+                checkCreateRoomButton();
+            });
+        });
+        
+        questionCountGrid.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', () => {
+                questionCountGrid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                gameState.questionCount = parseInt(card.dataset.count);
+                checkCreateRoomButton();
+            });
+        });
+        
+        modeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                modeOptions.forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                gameState.gameMode = option.dataset.mode;
+                gameModeIndicator.textContent = gameState.gameMode.charAt(0).toUpperCase() + gameState.gameMode.slice(1);
+                
+                // Update leaderboard title based on mode
+                if (gameState.gameMode === 'team') {
+                    leaderboardTitle.textContent = 'Team Scores';
+                } else {
+                    leaderboardTitle.textContent = 'Leaderboard';
+                }
+            });
+        });
+        
+        // Functions
+        function showScreen(screen) {
+            // Hide all screens
+            homeScreen.classList.add('hidden');
+            joinScreen.classList.add('hidden');
+            quizSetupScreen.classList.add('hidden');
+            lobbyScreen.classList.add('hidden');
+            quizScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden');
+            
+            // Show the requested screen
+            screen.classList.remove('hidden');
+        }
+        
+        function showHomeScreen() {
+            showScreen(homeScreen);
+            connectionStatus.classList.add('hidden');
+        }
+        
+        function showJoinScreen() {
+            showScreen(joinScreen);
+            gameState.isHost = false;
+            userRoleElement.textContent = 'Player';
+            connectionStatus.classList.remove('hidden');
+            updateConnectionStatus('connecting');
+            
+            // Simulate connection process
+            setTimeout(() => {
+                updateConnectionStatus('connected');
+            }, 1500);
+        }
+        
+        function showQuizSetupScreen() {
+            showScreen(quizSetupScreen);
+            gameState.isHost = true;
+            userRoleElement.textContent = 'Host';
+            connectionStatus.classList.remove('hidden');
+            updateConnectionStatus('connected');
+        }
+        
+        function showLobbyScreen() {
+            showScreen(lobbyScreen);
+            
+            // Generate a random room code
+            gameState.roomCode = generateRoomCode();
+            document.getElementById('room-code').textContent = gameState.roomCode;
+            
+            // Add current user to players list
+            if (gameState.isHost) {
+                gameState.players = [{ id: 0, name: 'You (Host)', score: 0, team: null }];
+            } else {
+                const playerName = document.getElementById('player-name').value || 'Player';
+                gameState.players = [{ id: 0, name: playerName, score: 0, team: null }];
+            }
+            
+            // Add dummy players for simulation
+            dummyPlayers.forEach(player => {
+                gameState.players.push({...player});
+            });
+            
+            // Render players list
+            renderPlayersList();
+            
+            // Show team assignment section if in team mode
+            if (gameState.gameMode === 'team') {
+                teamAssignmentSection.classList.remove('hidden');
+                assignTeams();
+            } else {
+                teamAssignmentSection.classList.add('hidden');
+            }
+        }
+        
+        function showQuizScreen() {
+            showScreen(quizScreen);
+            
+            // Set up the first question
+            document.getElementById('current-question').textContent = gameState.currentQuestion;
+            document.getElementById('total-questions').textContent = gameState.questionCount;
+            
+            // Load question
+            loadQuestion();
+            
+            // Start timer
+            startTimer();
+            
+            // Render leaderboard
+            renderLeaderboard();
+        }
+        
+        function showResultsScreen() {
+            showScreen(resultsScreen);
+            
+            // Show appropriate results based on game mode
+            if (gameState.gameMode === 'team') {
+                individualResults.classList.add('hidden');
+                teamResults.classList.remove('hidden');
+                renderTeamResults();
+            } else {
+                individualResults.classList.add('hidden');
+                teamResults.classList.add('hidden');
+                renderIndividualResults();
+            }
+        }
+        
+        function checkCreateRoomButton() {
+            if (gameState.topic && gameState.questionCount) {
+                createRoomBtn.disabled = false;
+            } else {
+                createRoomBtn.disabled = true;
+            }
+        }
+        
+        function generateRoomCode() {
+            return Math.random().toString(36).substring(2, 6).toUpperCase();
+        }
+        
+        function joinRoom() {
+            const playerName = document.getElementById('player-name').value;
+            const roomCode = document.getElementById('room-code-input').value;
+            
+            if (!playerName) {
+                alert('Please enter your name');
+                return;
+            }
+            
+            if (!roomCode) {
+                alert('Please enter a room code');
+                return;
+            }
+            
+            // Simulate joining a room
+            updateConnectionStatus('connecting');
+            
+            setTimeout(() => {
+                updateConnectionStatus('connected');
+                gameState.roomCode = roomCode;
+                showLobbyScreen();
+            }, 1500);
+        }
+        
+        function createRoom() {
+            showLobbyScreen();
+        }
+        
+        function startQuiz() {
+            showQuizScreen();
+        }
+        
+        function loadQuestion() {
+            const topicQuestions = questions[gameState.topic];
+            const currentQuestion = topicQuestions[gameState.currentQuestion - 1];
+            
+            document.getElementById('question-text').textContent = currentQuestion.question;
+            
+            const optionsGrid = document.getElementById('options-grid');
+            optionsGrid.innerHTML = '';
+            
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'option-btn glass-button';
+                button.textContent = option;
+                button.addEventListener('click', () => selectOption(button, index, currentQuestion.correctIndex));
+                optionsGrid.appendChild(button);
+            });
+            
+            // Reset timer
+            gameState.timeRemaining = 30;
+            timerElement.textContent = formatTime(gameState.timeRemaining);
+        }
+        
+        function selectOption(button, selectedIndex, correctIndex) {
+            const options = document.querySelectorAll('.option-btn');
+            options.forEach(opt => opt.classList.remove('selected'));
+            
+            button.classList.add('selected');
+            
+            // Simulate answer evaluation
+            if (selectedIndex === correctIndex) {
+                // Correct answer
+                gameState.score += 10;
+            }
+            
+            // Disable all options after selection
+            options.forEach(opt => {
+                opt.disabled = true;
+            });
+        }
+        
+        function nextQuestion() {
+            gameState.currentQuestion++;
+            
+            if (gameState.currentQuestion > gameState.questionCount) {
+                // Quiz finished
+                clearInterval(gameState.timer);
+                showResultsScreen();
+            } else {
+                // Load next question
+                document.getElementById('current-question').textContent = gameState.currentQuestion;
+                loadQuestion();
+                
+                // Reset and start timer
+                clearInterval(gameState.timer);
+                gameState.timeRemaining = 30;
+                timerElement.textContent = formatTime(gameState.timeRemaining);
+                startTimer();
+                
+                // Update leaderboard with random scores for dummy players
+                updateDummyScores();
+                renderLeaderboard();
+            }
+        }
+        
+        function startTimer() {
+            gameState.timer = setInterval(() => {
+                gameState.timeRemaining--;
+                timerElement.textContent = formatTime(gameState.timeRemaining);
+                
+                if (gameState.timeRemaining <= 0) {
+                    clearInterval(gameState.timer);
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+        
+        function formatTime(seconds) {
+            return `00:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function updateConnectionStatus(status) {
+            connectionStatus.className = 'connection-status';
+            
+            switch(status) {
+                case 'connected':
+                    connectionStatus.classList.add('status-connected');
+                    connectionStatus.innerHTML = '<i class="fas fa-wifi"></i> Connected';
+                    break;
+                case 'disconnected':
+                    connectionStatus.classList.add('status-disconnected');
+                    connectionStatus.innerHTML = '<i class="fas fa-plug"></i> Disconnected';
+                    break;
+                case 'connecting':
+                    connectionStatus.classList.add('status-connecting');
+                    connectionStatus.innerHTML = '<i class="fas fa-sync fa-spin"></i> Connecting...';
+                    break;
+            }
+        }
+        
+        function renderPlayersList() {
+            playersContainer.innerHTML = '';
+            
+            gameState.players.forEach(player => {
+                const playerElement = document.createElement('div');
+                playerElement.className = 'player-item glass-card';
+                
+                playerElement.innerHTML = `
+                    <div class="player-info">
+                        <strong>${player.name}</strong>
+                        ${player.team ? `<span class="team-badge">Team ${player.team}</span>` : ''}
+                    </div>
+                    <div class="player-actions">
+                        ${gameState.isHost && player.id !== 0 ? `
+                            <button class="action-btn btn-approve"><i class="fas fa-check"></i></button>
+                            <button class="action-btn btn-reject"><i class="fas fa-times"></i></button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                playersContainer.appendChild(playerElement);
+            });
+        }
+        
+        function assignTeams() {
+            const teams = ['Red', 'Blue', 'Green', 'Yellow'];
+            const teamList = document.getElementById('team-list');
+            teamList.innerHTML = '';
+            
+            gameState.teams = [];
+            
+            teams.forEach(team => {
+                const teamElement = document.createElement('div');
+                teamElement.className = `team-item team-${team.toLowerCase()}`;
+                
+                teamElement.innerHTML = `
+                    <div class="team-header">
+                        <strong>Team ${team}</strong>
+                    </div>
+                    <div class="team-members" id="team-${team.toLowerCase()}-members">
+                        <!-- Team members will be added here -->
+                    </div>
+                `;
+                
+                teamList.appendChild(teamElement);
+                gameState.teams.push({ name: team, score: 0, members: [] });
+            });
+            
+            // Assign players to teams
+            gameState.players.forEach((player, index) => {
+                if (index > 0) { // Skip the host/current player for now
+                    const teamIndex = index % 4;
+                    const team = gameState.teams[teamIndex];
+                    team.members.push(player);
+                    player.team = team.name;
+                    
+                    const teamMembersElement = document.getElementById(`team-${team.name.toLowerCase()}-members`);
+                    const memberElement = document.createElement('div');
+                    memberElement.textContent = player.name;
+                    teamMembersElement.appendChild(memberElement);
+                }
+            });
+        }
+        
+        function renderLeaderboard() {
+            leaderboardList.innerHTML = '';
+            
+            if (gameState.gameMode === 'team') {
+                // Sort teams by score
+                const sortedTeams = [...gameState.teams].sort((a, b) => b.score - a.score);
+                
+                sortedTeams.forEach(team => {
+                    const item = document.createElement('div');
+                    item.className = 'team-leaderboard-item glass-card';
+                    item.innerHTML = `
+                        <div>Team ${team.name}</div>
+                        <div class="team-score">${team.score}</div>
+                    `;
+                    leaderboardList.appendChild(item);
+                });
+            } else {
+                // Sort players by score
+                const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+                
+                sortedPlayers.forEach((player, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'leaderboard-item glass-card';
+                    if (player.id === 0) {
+                        item.classList.add('current-user');
+                    }
+                    
+                    item.innerHTML = `
+                        <div>${index + 1}. ${player.name}</div>
+                        <div>${player.score}</div>
+                    `;
+                    leaderboardList.appendChild(item);
+                });
+            }
+        }
+        
+        function updateDummyScores() {
+            // Update scores for dummy players
+            gameState.players.forEach(player => {
+                if (player.id !== 0) { // Skip the current player
+                    // Random score increment between 0 and 15
+                    player.score += Math.floor(Math.random() * 15);
+                    
+                    // If in team mode, update team scores
+                    if (gameState.gameMode === 'team' && player.team) {
+                        const team = gameState.teams.find(t => t.name === player.team);
+                        if (team) {
+                            team.score = team.members.reduce((sum, member) => sum + member.score, 0);
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderIndividualResults() {
+            // Sort players by score
+            const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+            
+            // Update podium
+            const podiumItems = document.querySelectorAll('.podium-item');
+            if (sortedPlayers.length > 0) {
+                document.querySelector('.podium-item.first .podium-name').textContent = sortedPlayers[0].name;
+                document.querySelector('.podium-item.first .podium-score').textContent = sortedPlayers[0].score;
+            }
+            if (sortedPlayers.length > 1) {
+                document.querySelector('.podium-item.second .podium-name').textContent = sortedPlayers[1].name;
+                document.querySelector('.podium-item.second .podium-score').textContent = sortedPlayers[1].score;
+            }
+            if (sortedPlayers.length > 2) {
+                document.querySelector('.podium-item.third .podium-name').textContent = sortedPlayers[2].name;
+                document.querySelector('.podium-item.third .podium-score').textContent = sortedPlayers[2].score;
+            }
+            
+            // Update final leaderboard
+            const finalLeaderboard = document.getElementById('final-leaderboard');
+            finalLeaderboard.innerHTML = '';
+            
+            sortedPlayers.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'leaderboard-item glass-card';
+                if (player.id === 0) {
+                    item.classList.add('current-user');
+                }
+                
+                item.innerHTML = `
+                    <div>${index + 1}. ${player.name}</div>
+                    <div>${player.score}</div>
+                `;
+                finalLeaderboard.appendChild(item);
+            });
+        }
+        
+        function renderTeamResults() {
+            // Sort teams by score
+            const sortedTeams = [...gameState.teams].sort((a, b) => b.score - a.score);
+            
+            // Update team results container
+            const teamResultsContainer = document.getElementById('team-results-container');
+            teamResultsContainer.innerHTML = '';
+            
+            sortedTeams.forEach(team => {
+                const card = document.createElement('div');
+                card.className = 'team-result-card glass-card';
+                card.innerHTML = `
+                    <div class="team-result-name">Team ${team.name}</div>
+                    <div class="team-result-score">${team.score}</div>
+                `;
+                teamResultsContainer.appendChild(card);
+            });
+            
+            // Update team members container
+            const teamMembersContainer = document.getElementById('team-members-container');
+            teamMembersContainer.innerHTML = '';
+            
+            sortedTeams.forEach(team => {
+                const header = document.createElement('h4');
+                header.textContent = `Team ${team.name} Members`;
+                header.style.marginTop = '20px';
+                teamMembersContainer.appendChild(header);
+                
+                // Sort team members by score
+                const sortedMembers = [...team.members].sort((a, b) => b.score - a.score);
+                
+                sortedMembers.forEach(member => {
+                    const item = document.createElement('div');
+                    item.className = 'leaderboard-item glass-card';
+                    if (member.id === 0) {
+                        item.classList.add('current-user');
+                    }
+                    
+                    item.innerHTML = `
+                        <div>${member.name}</div>
+                        <div>${member.score}</div>
+                    `;
+                    teamMembersContainer.appendChild(item);
+                });
+            });
+        }
+        
+        // Initialize the app
+        showHomeScreen();
+    </script>
+</body>
+</html>
